@@ -1,0 +1,154 @@
+import math
+import random
+
+class TicTacToe:
+    def __init__(self):
+        self.board = [' ' for _ in range(9)]
+
+    def print_board(self):
+        for row in [self.board[i*3:(i+1)*3] for i in range(3)]:
+            print('| ' + ' | '.join(row) + ' |')
+
+    def available_moves(self):
+        return [i for i, spot in enumerate(self.board) if spot == ' ']
+
+    def empty_squares(self):
+        return ' ' in self.board
+
+    def num_empty_squares(self):
+        return self.board.count(' ')
+
+    def make_move(self, square, letter):
+        if self.board[square] == ' ':
+            self.board[square] = letter
+            return True
+        return False
+
+    def winner(self, square, letter):
+        # Check the row
+        row_ind = square // 3
+        row = self.board[row_ind*3:(row_ind+1)*3]
+        if all([spot == letter for spot in row]):
+            return True
+
+        # Check the column
+        col_ind = square % 3
+        column = [self.board[col_ind+i*3] for i in range(3)]
+        if all([spot == letter for spot in column]):
+            return True
+
+        # Check diagonals
+        if square % 2 == 0:
+            diagonal1 = [self.board[i] for i in [0,4,8]]
+            if all([spot == letter for spot in diagonal1]):
+                return True
+            diagonal2 = [self.board[i] for i in [2,4,6]]
+            if all([spot == letter for spot in diagonal2]):
+                return True
+
+        return False
+
+def minimax(state, player, maximizing_player, minimizing_player):
+    max_player = maximizing_player  # The AI letter ('X' or 'O')
+    other_player = minimizing_player  # The human letter
+
+    # First, check if the previous move was a winner
+    if state.winner_last_move(max_player):
+        return {'position': None, 'score': 1 * (state.num_empty_squares() + 1)}
+    elif state.winner_last_move(other_player):
+        return {'position': None, 'score': -1 * (state.num_empty_squares() + 1)}
+    elif not state.empty_squares():
+        return {'position': None, 'score': 0}  # Tie
+
+    if player == max_player:
+        best = {'position': None, 'score': -math.inf}
+    else:
+        best = {'position': None, 'score': math.inf}
+
+    for possible_move in state.available_moves():
+        # Try this move
+        state.make_move(possible_move, player)
+        
+        # Recurse
+        sim_score = minimax(state, other_player, maximizing_player, minimizing_player)
+
+        # Undo the move
+        state.board[possible_move] = ' '
+        
+        # Update the best move
+        sim_score['position'] = possible_move
+
+        if player == max_player:
+            if sim_score['score'] > best['score']:
+                best = sim_score
+        else:
+            if sim_score['score'] < best['score']:
+                best = sim_score
+
+    return best
+
+# Helper to add winner checking for last move in minimax
+def winner_last_move(self, letter):
+    for i in range(9):
+        if self.board[i] == letter:
+            if self.winner(i, letter):
+                return True
+    return False
+
+# Attach it to the class
+TicTacToe.winner_last_move = winner_last_move
+
+def play(game, x_player, o_player, print_game=True):
+    if print_game:
+        game.print_board()
+
+    letter = 'X'  # starting letter
+    while game.empty_squares():
+        if letter == 'O':
+            square = o_player(game)
+        else:
+            square = x_player(game)
+
+        if game.make_move(square, letter):
+            if print_game:
+                print(f'{letter} makes a move to square {square}')
+                game.print_board()
+                print('')
+
+            if game.winner(square, letter):
+                if print_game:
+                    print(f'{letter} wins!')
+                return letter
+
+            letter = 'O' if letter == 'X' else 'X'  # Switch turns
+
+        else:
+            print("Invalid move. Try again.")
+
+    if print_game:
+        print('It\'s a tie!')
+
+def human_player(game):
+    valid_square = False
+    val = None
+    while not valid_square:
+        square = input('Choose your move (0-8): ')
+        try:
+            val = int(square)
+            if val not in game.available_moves():
+                raise ValueError
+            valid_square = True
+        except ValueError:
+            print('Invalid move. Try again.')
+    return val
+
+def ai_player(game):
+    if len(game.available_moves()) == 9:
+        return random.choice(game.available_moves())  # Random first move
+    else:
+        move = minimax(game, 'X', 'X', 'O')['position']
+        return move
+
+if __name__ == '__main__':
+    t = TicTacToe()
+    play(t, ai_player, human_player, print_game=True)
