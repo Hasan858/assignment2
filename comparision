@@ -1,0 +1,156 @@
+import math
+import random
+import time
+
+class TicTacToe:
+    def __init__(self):
+        self.board = [' ' for _ in range(9)]
+
+    def print_board(self):
+        for row in [self.board[i*3:(i+1)*3] for i in range(3)]:
+            print('| ' + ' | '.join(row) + ' |')
+
+    def available_moves(self):
+        return [i for i, spot in enumerate(self.board) if spot == ' ']
+
+    def empty_squares(self):
+        return ' ' in self.board
+
+    def num_empty_squares(self):
+        return self.board.count(' ')
+
+    def make_move(self, square, letter):
+        if self.board[square] == ' ':
+            self.board[square] = letter
+            return True
+        return False
+
+    def winner(self, square, letter):
+        row_ind = square // 3
+        row = self.board[row_ind*3:(row_ind+1)*3]
+        if all([spot == letter for spot in row]):
+            return True
+
+        col_ind = square % 3
+        column = [self.board[col_ind+i*3] for i in range(3)]
+        if all([spot == letter for spot in column]):
+            return True
+
+        if square % 2 == 0:
+            diagonal1 = [self.board[i] for i in [0,4,8]]
+            if all([spot == letter for spot in diagonal1]):
+                return True
+            diagonal2 = [self.board[i] for i in [2,4,6]]
+            if all([spot == letter for spot in diagonal2]):
+                return True
+
+        return False
+
+def winner_last_move(self, letter):
+    for i in range(9):
+        if self.board[i] == letter:
+            if self.winner(i, letter):
+                return True
+    return False
+
+TicTacToe.winner_last_move = winner_last_move
+
+def minimax(state, player, maximizing_player, minimizing_player):
+    max_player = maximizing_player
+    other_player = minimizing_player
+
+    if state.winner_last_move(max_player):
+        return {'position': None, 'score': 1 * (state.num_empty_squares() + 1)}
+    elif state.winner_last_move(other_player):
+        return {'position': None, 'score': -1 * (state.num_empty_squares() + 1)}
+    elif not state.empty_squares():
+        return {'position': None, 'score': 0}
+
+    if player == max_player:
+        best = {'position': None, 'score': -math.inf}
+    else:
+        best = {'position': None, 'score': math.inf}
+
+    for possible_move in state.available_moves():
+        state.make_move(possible_move, player)
+        sim_score = minimax(state, other_player, maximizing_player, minimizing_player)
+        state.board[possible_move] = ' '
+        sim_score['position'] = possible_move
+
+        if player == max_player:
+            if sim_score['score'] > best['score']:
+                best = sim_score
+        else:
+            if sim_score['score'] < best['score']:
+                best = sim_score
+
+    return best
+
+def alpha_beta_minimax(state, player, maximizing_player, minimizing_player, alpha, beta):
+    max_player = maximizing_player
+    other_player = minimizing_player
+
+    if state.winner_last_move(max_player):
+        return {'position': None, 'score': 1 * (state.num_empty_squares() + 1)}
+    elif state.winner_last_move(other_player):
+        return {'position': None, 'score': -1 * (state.num_empty_squares() + 1)}
+    elif not state.empty_squares():
+        return {'position': None, 'score': 0}
+
+    if player == max_player:
+        best = {'position': None, 'score': -math.inf}
+    else:
+        best = {'position': None, 'score': math.inf}
+
+    for possible_move in state.available_moves():
+        state.make_move(possible_move, player)
+        sim_score = alpha_beta_minimax(state, other_player, maximizing_player, minimizing_player, alpha, beta)
+        state.board[possible_move] = ' '
+        sim_score['position'] = possible_move
+
+        if player == max_player:
+            if sim_score['score'] > best['score']:
+                best = sim_score
+            alpha = max(alpha, sim_score['score'])
+        else:
+            if sim_score['score'] < best['score']:
+                best = sim_score
+            beta = min(beta, sim_score['score'])
+
+        if beta <= alpha:
+            break
+
+    return best
+
+def compare_algorithms():
+    t = TicTacToe()
+    
+    print("Starting comparison...\n")
+    
+    # Randomly fill board partially to make realistic test
+    moves = random.sample(range(9), 4)  # Randomly place 4 moves
+    letters = ['X', 'O']
+    for i, move in enumerate(moves):
+        t.make_move(move, letters[i % 2])
+    
+    print("Current Board:")
+    t.print_board()
+    
+    print("\nRunning Minimax...")
+    start_minimax = time.time()
+    move_minimax = minimax(t, 'X', 'X', 'O')
+    end_minimax = time.time()
+    print(f"Minimax selected move {move_minimax['position']} with score {move_minimax['score']}")
+    print(f"Minimax Time Taken: {(end_minimax - start_minimax):.6f} seconds\n")
+
+    print("Running Alpha-Beta Minimax...")
+    start_ab = time.time()
+    move_ab = alpha_beta_minimax(t, 'X', 'X', 'O', -math.inf, math.inf)
+    end_ab = time.time()
+    print(f"Alpha-Beta selected move {move_ab['position']} with score {move_ab['score']}")
+    print(f"Alpha-Beta Time Taken: {(end_ab - start_ab):.6f} seconds\n")
+
+    print("Comparison Completed.")
+
+if __name__ == '__main__':
+    compare_algorithms()
